@@ -84,36 +84,60 @@
     gap:0.8rem;
   }
   .waitlist.centered{align-items:center; margin:0 auto;}
-  .form-slot{
-    width:100%;
-    min-height:52px;
-    display:flex;
-    align-items:center;
-  }
-  .waitlist.centered .form-slot{justify-content:center;}
 
-  /* Klaviyo renders its real fields into this div on the live site. Until
-     then (and here, in the sandboxed preview) it's empty, so this shows a
-     clearly-labelled placeholder that disappears automatically once real
-     form markup lands inside it. */
-  .klaviyo-form-RMga8x:empty{
+  /* ---------- Custom waitlist form ---------- */
+  .waitlist-form{width:100%; display:flex; flex-direction:column; gap:0.6rem;}
+  .waitlist-field{
     display:flex;
-    align-items:center;
-    justify-content:center;
-    width:100%;
-    min-height:48px;
-    border:1px solid var(--line);
-    padding:0.85rem 1.1rem;
+    align-items:stretch;
+    gap:0.75rem;
+    border-bottom:1px solid var(--charcoal);
+  }
+  .waitlist-field input{
+    flex:1;
+    min-width:0;
+    border:none;
+    background:transparent;
+    padding:0.65rem 0.15rem;
     font-family:'Nunito', sans-serif;
-    font-size:0.78rem;
-    letter-spacing:0.03em;
+    font-weight:300;
+    font-size:0.95rem;
+    color:var(--charcoal);
+  }
+  .waitlist-field input::placeholder{color:var(--charcoal-soft);}
+  .waitlist-field input:focus{outline:none;}
+  .waitlist-field button{
+    background:none;
+    border:none;
+    padding:0.65rem 0.15rem;
+    font-family:'Nunito', sans-serif;
+    font-weight:700;
+    font-size:0.74rem;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--sage-deep);
+    cursor:pointer;
+    white-space:nowrap;
+    transition:color 0.25s ease;
+  }
+  .waitlist-field button:hover, .waitlist-field button:focus-visible{color:var(--charcoal);}
+  .waitlist-field button:disabled{opacity:0.5; cursor:default;}
+  .waitlist-message{
+    font-size:0.76rem;
     color:var(--charcoal-soft);
+    min-height:1.1em;
   }
-  .klaviyo-form-RMga8x:empty::before{content:"Email signup form appears here live";}
-  .signup-band .klaviyo-form-RMga8x:empty{
-    border-color:rgba(248,245,236,0.5);
-    color:var(--cream);
-  }
+  .waitlist-message.is-success{color:var(--sage-deep); font-weight:600;}
+  .waitlist-message.is-error{color:var(--charcoal); font-weight:600;}
+
+  .signup-band .waitlist-field{border-bottom-color:rgba(248,245,236,0.55);}
+  .signup-band .waitlist-field input{color:var(--cream);}
+  .signup-band .waitlist-field input::placeholder{color:rgba(248,245,236,0.7);}
+  .signup-band .waitlist-field button{color:var(--cream);}
+  .signup-band .waitlist-field button:hover, .signup-band .waitlist-field button:focus-visible{color:var(--charcoal);}
+  .signup-band .waitlist-message{color:rgba(248,245,236,0.8);}
+  .signup-band .waitlist-message.is-success{color:var(--cream);}
+  .signup-band .waitlist-message.is-error{color:var(--charcoal);}
 
   /* ---------- Sections ---------- */
   section{padding:min(13vh, 7rem) 6vw;}
@@ -233,14 +257,13 @@
     </div>
     <div class="waitlist reveal d2">
       <span class="eyebrow">Join the Waitlist</span>
-      <div class="form-slot">
-        <!--
-          Klaviyo embed — leave as supplied. The account script is loaded
-          in <head>. Appears empty in the Artifact preview only, since
-          that script can't load in this sandboxed environment.
-        -->
-        <div class="klaviyo-form-RMga8x"></div>
-      </div>
+      <form class="waitlist-form" data-source="Hero Waitlist" novalidate>
+        <div class="waitlist-field">
+          <input type="email" name="email" required placeholder="Email address" aria-label="Email address" autocomplete="email" />
+          <button type="submit">Join</button>
+        </div>
+        <p class="waitlist-message" role="status" aria-live="polite"></p>
+      </form>
     </div>
   </div>
   <div class="hero-image">
@@ -252,9 +275,13 @@
   <div class="inner">
     <h2>Be the first to know when the Australis in Bloom collection drops.</h2>
     <div class="waitlist centered">
-      <div class="form-slot">
-        <div class="klaviyo-form-RMga8x"></div>
-      </div>
+      <form class="waitlist-form" data-source="Below-Fold Waitlist" novalidate>
+        <div class="waitlist-field">
+          <input type="email" name="email" required placeholder="Email address" aria-label="Email address" autocomplete="email" />
+          <button type="submit">Join</button>
+        </div>
+        <p class="waitlist-message" role="status" aria-live="polite"></p>
+      </form>
     </div>
   </div>
 </section>
@@ -280,3 +307,78 @@
   <span class="footer-tagline">from the elm</span>
   <span class="footer-copyright">&copy; 2026 ELOWEN EVE</span>
 </footer>
+
+<script>
+(function(){
+  var KLAVIYO_COMPANY_ID = "RLUa7C";
+  var KLAVIYO_LIST_ID = "Vd6Eua";
+  var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  document.querySelectorAll('.waitlist-form').forEach(function(form){
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+      var input = form.querySelector('input[type="email"]');
+      var button = form.querySelector('button');
+      var message = form.querySelector('.waitlist-message');
+      var email = input.value.trim();
+
+      if(!emailPattern.test(email)){
+        message.textContent = 'Please enter a valid email address.';
+        message.className = 'waitlist-message is-error';
+        return;
+      }
+
+      var originalLabel = button.textContent;
+      button.disabled = true;
+      button.textContent = 'Joining…';
+      message.textContent = '';
+      message.className = 'waitlist-message';
+
+      fetch('https://a.klaviyo.com/client/subscriptions?company_id=' + KLAVIYO_COMPANY_ID, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/vnd.api+json',
+          'revision': '2026-07-15'
+        },
+        body: JSON.stringify({
+          data: {
+            type: 'subscription',
+            attributes: {
+              custom_source: form.dataset.source || 'Website Waitlist',
+              profile: {
+                data: {
+                  type: 'profile',
+                  attributes: {
+                    email: email,
+                    subscriptions: {
+                      email: { marketing: { consent: 'SUBSCRIBED' } }
+                    }
+                  }
+                }
+              }
+            },
+            relationships: {
+              list: { data: { type: 'list', id: KLAVIYO_LIST_ID } }
+            }
+          }
+        })
+      }).then(function(res){
+        if(res.ok){
+          message.textContent = "You're on the list. Thank you.";
+          message.className = 'waitlist-message is-success';
+          form.reset();
+        } else {
+          message.textContent = 'Something went wrong — please try again.';
+          message.className = 'waitlist-message is-error';
+        }
+      }).catch(function(){
+        message.textContent = 'Something went wrong — please try again.';
+        message.className = 'waitlist-message is-error';
+      }).finally(function(){
+        button.disabled = false;
+        button.textContent = originalLabel;
+      });
+    });
+  });
+})();
+</script>
